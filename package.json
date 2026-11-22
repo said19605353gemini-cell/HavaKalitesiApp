@@ -1,0 +1,16 @@
+{
+  "name": "hava-kalitesi-app",
+  "version": "1.0.0",
+  "description": "Hava Kalitesi ve Kirlilik Takibi Mobil Uygulaması",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'Web assets ready in www/'"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.3",
+    "@capacitor/core": "^6.2.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.3"
+  }
+}

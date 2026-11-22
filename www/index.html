@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Hava Kalitesi ve Kirlilik Takibi</title>
+  <!-- Google Fonts & Lucide Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js for 24h Trend Chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(22, 28, 45, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --safe-top: env(safe-area-inset-top, 24px);
+      --safe-bottom: env(safe-area-inset-bottom, 20px);
+      --status-good: #10b981;
+      --status-moderate: #f59e0b;
+      --status-unhealthy-sensitive: #f97316;
+      --status-unhealthy: #ef4444;
+      --status-very-unhealthy: #8b5cf6;
+      --status-hazardous: #7f1d1d;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.12) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      padding-top: var(--safe-top);
+      padding-bottom: calc(var(--safe-bottom) + 20px);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 540px;
+      margin: 0 auto;
+      padding: 12px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .location-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 10px 14px;
+      border-radius: 20px;
+      backdrop-filter: blur(12px);
+      cursor: pointer;
+      flex-grow: 1;
+    }
+
+    .location-box:active {
+      transform: scale(0.98);
+    }
+
+    .location-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .location-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .location-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .icon-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .icon-btn:active {
+      transform: rotate(30deg) scale(0.95);
+      background: rgba(56, 189, 248, 0.2);
+    }
+
+    /* City Quick Bar */
+    .city-chips {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .city-chips::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .chip.active {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+
+    /* Hero AQI Card */
+    .hero-card {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.85));
+      border: 1px solid var(--card-border);
+      border-radius: 28px;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .hero-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, var(--glow-color, rgba(16, 185, 129, 0.15)) 0%, transparent 65%);
+      pointer-events: none;
+      transition: all 0.5s ease;
+    }
+
+    .aqi-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      border: 1px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .aqi-score {
+      font-size: 72px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -2px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .aqi-score span {
+      font-size: 16px;
+      color: var(--text-muted);
+      font-weight: 500;
+      letter-spacing: normal;
+    }
+
+    .aqi-status-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .aqi-advice {
+      font-size: 13px;
+      color: var(--text-muted);
+      max-width: 380px;
+      margin: 0 auto 16px;
+      line-height: 1.5;
+    }
+
+    /* Weather Quick Stats */
+    .weather-row {
+      display: flex;
+      justify-content: space-around;
+      border-top: 1px solid var(--card-border);
+      padding-top: 16px;
+      margin-top: 8px;
+    }
+
+    .w-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .w-item span.val {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .w-item span.lbl {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Pollutants Grid */
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .pollutants-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .p-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 16px;
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .p-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .p-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .p-desc {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .p-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+
+    .p-value span {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .p-bar-bg {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .p-bar-fill {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Chart Card */
+    .chart-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 18px;
+      backdrop-filter: blur(12px);
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    /* Health Advice Cards */
+    .health-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .health-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .health-item i {
+      padding: 8px;
+      border-radius: 10px;
+      background: rgba(56, 189, 248, 0.1);
+      color: #38bdf8;
+      flex-shrink: 0;
+    }
+
+    .health-text {
+      font-size: 12px;
+      line-height: 1.4;
+      color: #cbd5e1;
+    }
+
+    .health-text strong {
+      display: block;
+      color: #fff;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    /* Search Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 999;
+      justify-content: center;
+      align-items: flex-end;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 28px 28px 0 0;
+      width: 100%;
+      max-width: 540px;
+      padding: 24px 20px calc(var(--safe-bottom) + 20px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .search-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-input-wrap input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 14px 14px 14px 44px;
+      color: #fff;
+      font-size: 16px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .search-input-wrap input:focus {
+      border-color: #38bdf8;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      color: var(--text-muted);
+    }
+
+    .search-results {
+      max-height: 260px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .search-result-item {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+    }
+
+    .search-result-item:hover, .search-result-item:active {
+      background: rgba(56, 189, 248, 0.15);
+    }
+
+    /* Loader */
+    .loader {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #38bdf8;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.8);
+      backdrop-filter: blur(6px);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .loading-overlay.show {
+      display: flex;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loader" style="width: 40px; height: 40px; border-width: 3px;"></div>
+    <div style="font-size: 14px; font-weight: 600; color: #94a3b8;">Hava Kalitesi Verileri Yükleniyor...</div>
+  </div>
+
+  <div class="container">
+    
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div class="location-box" id="btnOpenSearch">
+        <i data-lucide="map-pin" style="color: #38bdf8; width: 20px; height: 20px;"></i>
+        <div class="location-text">
+          <span class="location-name" id="cityName">İstanbul</span>
+          <span class="location-sub" id="countryName">Türkiye</span>
+        </div>
+      </div>
+      <button class="icon-btn" id="btnGps" title="Konumumu Bul">
+        <i data-lucide="navigation" style="width: 20px; height: 20px;"></i>
+      </button>
+      <button class="icon-btn" id="btnRefresh" title="Yenile">
+        <i data-lucide="rotate-cw" style="width: 20px; height: 20px;"></i>
+      </button>
+    </div>
+
+    <!-- Quick City Selection Chips -->
+    <div class="city-chips">
+      <div class="chip active" data-lat="41.0082" data-lon="28.9784" data-name="İstanbul">İstanbul</div>
+      <div class="chip" data-lat="39.9334" data-lon="32.8597" data-name="Ankara">Ankara</div>
+      <div class="chip" data-lat="38.4237" data-lon="27.1428" data-name="İzmir">İzmir</div>
+      <div class="chip" data-lat="36.8969" data-lon="30.7133" data-name="Antalya">Antalya</div>
+      <div class="chip" data-lat="40.1885" data-lon="29.0610" data-name="Bursa">Bursa</div>
+      <div class="chip" data-lat="37.0662" data-lon="37.3833" data-name="Gaziantep">Gaziantep</div>
+    </div>
+
+    <!-- Hero AQI Card -->
+    <div class="hero-card" id="heroCard">
+      <div class="aqi-badge" id="aqiBadge">
+        <i data-lucide="activity" style="width: 14px; height: 14px;"></i>
+        <span id="aqiLevelText">İYİ</span>
+      </div>
+      <div class="aqi-score" id="aqiVal">
+        28 <span>AQI</span>
+      </div>
+      <div class="aqi-status-title" id="aqiDesc">Hava Kalitesi Mükemmel</div>
+      <p class="aqi-advice" id="aqiAdvice">Açık hava aktiviteleri için harika bir gün. Pencereleri açıp havalandırabilirsiniz.</p>
+
+      <!-- Weather Parameters Inside Hero Card -->
+      <div class="weather-row">
+        <div class="w-item">
+          <i data-lucide="thermometer" style="color: #f59e0b; width: 18px; height: 18px;"></i>
+          <span class="val" id="tempVal">-- °C</span>
+          <span class="lbl">Sıcaklık</span>
+        </div>
+        <div class="w-item">
+          <i data-lucide="droplet" style="color: #38bdf8; width: 18px; height: 18px;"></i>
+          <span class="val" id="humidityVal">-- %</span>
+          <span class="lbl">Nem</span>
+        </div>
+        <div class="w-item">
+          <i data-lucide="wind" style="color: #a78bfa; width: 18px; height: 18px;"></i>
+          <span class="val" id="windVal">-- km/s</span>
+          <span class="lbl">Rüzgar</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pollutants Grid -->
+    <div class="section-title">
+      <i data-lucide="layers" style="width: 18px; height: 18px; color: #38bdf8;"></i>
+      Kirletici Madde Konsantrasyonları
+    </div>
+
+    <div class="pollutants-grid">
+      <!-- PM2.5 -->
+      <div class="p-card">
+        <div class="p-header">
+          <div>
+            <div class="p-name">PM 2.5</div>
+            <div class="p-desc">İnce Partiküller</div>
+          </div>
+          <span id="pm25Badge" style="font-size:11px; font-weight:700; color: #10b981;">İyi</span>
+        </div>
+        <div class="p-value"><span id="pm25Val">8.4</span> <span>µg/m³</span></div>
+        <div class="p-bar-bg"><div class="p-bar-fill" id="pm25Bar" style="width: 25%; background: #10b981;"></div></div>
+      </div>
+
+      <!-- PM10 -->
+      <div class="p-card">
+        <div class="p-header">
+          <div>
+            <div class="p-name">PM 10</div>
+            <div class="p-desc">Toz & Polen</div>
+          </div>
+          <span id="pm10Badge" style="font-size:11px; font-weight:700; color: #10b981;">İyi</span>
+        </div>
+        <div class="p-value"><span id="pm10Val">18.2</span> <span>µg/m³</span></div>
+        <div class="p-bar-bg"><div class="p-bar-fill" id="pm10Bar" style="width: 30%; background: #10b981;"></div></div>
+      </div>
+
+      <!-- NO2 -->
+      <div class="p-card">
+        <div class="p-header">
+          <div>
+            <div class="p-name">NO₂</div>
+            <div class="p-desc">Azot Dioksit</div>
+          </div>
+          <span id="no2Badge" style="font-size:11px; font-weight:700; color: #10b981;">İyi</span>
+        </div>
+        <div class="p-value"><span id="no2Val">12.0</span> <span>µg/m³</span></div>
+        <div class="p-bar-bg"><div class="p-bar-fill" id="no2Bar" style="width: 20%; background: #10b981;"></div></div>
+      </div>
+
+      <!-- O3 Ozone -->
+      <div class="p-card">
+        <div class="p-header">
+          <div>
+            <div class="p-name">O₃</div>
+            <div class="p-desc">Ozon Seviyesi</div>
+          </div>
+          <span id="o3Badge" style="font-size:11px; font-weight:700; color: #10b981;">İyi</span>
+        </div>
+        <div class="p-value"><span id="o3Val">45.0</span> <span>µg/m³</span></div>
+        <div class="p-bar-bg"><div class="p-bar-fill" id="o3Bar" style="width: 40%; background: #10b981;"></div></div>
+      </div>
+
+      <!-- SO2 -->
+      <div class="p-card">
+        <div class="p-header">
+          <div>
+            <div class="p-name">SO₂</div>
+            <div class="p-desc">Kükürt Dioksit</div>
+          </div>
+          <span id="so2Badge" style="font-size:11px; font-weight:700; color: #10b981;">İyi</span>
+        </div>
+        <div class="p-value"><span id="so2Val">5.0</span> <span>µg/m³</span></div>
+        <div class="p-bar-bg"><div class="p-bar-fill" id="so2Bar" style="width: 15%; background: #10b981;"></div></div>
+      </div>
+
+      <!-- CO -->
+      <div class="p-card">
+        <div class="p-header">
+          <div>
+            <div class="p-name">CO</div>
+            <div class="p-desc">Karbonmonoksit</div>
+          </div>
+          <span id="coBadge" style="font-size:11px; font-weight:700; color: #10b981;">İyi</span>
+        </div>
+        <div class="p-value"><span id="coVal">240</span> <span>µg/m³</span></div>
+        <div class="p-bar-bg"><div class="p-bar-fill" id="coBar" style="width: 12%; background: #10b981;"></div></div>
+      </div>
+    </div>
+
+    <!-- 24 Hours Forecast Chart -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="section-title" style="margin: 0;">
+          <i data-lucide="trending-up" style="width: 18px; height: 18px; color: #38bdf8;"></i>
+          24 Saatlik Değişim & Tahmin
+        </div>
+        <span style="font-size: 11px; color: var(--text-muted);">AQI Değeri</span>
+      </div>
+      <div style="height: 180px; width: 100%;">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Health Recommendations -->
+    <div class="section-title">
+      <i data-lucide="shield-check" style="width: 18px; height: 18px; color: #38bdf8;"></i>
+      Sağlık & Önlem Rehberi
+    </div>
+
+    <div class="health-grid">
+      <div class="health-item">
+        <i data-lucide="sun"></i>
+        <div class="health-text">
+          <strong id="recOutdoorTitle">Dış Mekan</strong>
+          <span id="recOutdoorText">Açık havada yürüyüş ve spor için uygundur.</span>
+        </div>
+      </div>
+      <div class="health-item">
+        <i data-lucide="wind"></i>
+        <div class="health-text">
+          <strong id="recVentTitle">Havalandırma</strong>
+          <span id="recVentText">Evinizi temiz hava girmesi için havalandırın.</span>
+        </div>
+      </div>
+      <div class="health-item">
+        <i data-lucide="heart"></i>
+        <div class="health-text">
+          <strong id="recSensitiveTitle">Hassas Gruplar</strong>
+          <span id="recSensitiveText">Alerji ve astım hastaları için risk düşüktür.</span>
+        </div>
+      </div>
+      <div class="health-item">
+        <i data-lucide="shield-alert"></i>
+        <div class="health-text">
+          <strong id="recMaskTitle">Maske Durumu</strong>
+          <span id="recMaskText">Maske takmaya gerek bulunmuyor.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer info -->
+    <div style="text-align: center; font-size: 11px; color: #64748b; margin-top: 10px;">
+      Veri Kaynağı: Open-Meteo Air Quality & Weather API<br>
+      Gerçek zamanlı ve küresel hava izleme sistemi
+    </div>
+
+  </div>
+
+  <!-- City Search Modal -->
+  <div class="modal" id="searchModal">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 700; font-size: 17px; color: #fff;">Şehir veya Konum Ara</span>
+        <button id="btnCloseModal" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">✕</button>
+      </div>
+      <div class="search-input-wrap">
+        <i data-lucide="search" class="search-icon" style="width: 20px; height: 20px;"></i>
+        <input type="text" id="searchInput" placeholder="Örn: Ankara, Berlin, London, Tokyo..." autocomplete="off">
+      </div>
+      <div class="search-results" id="searchResults">
+        <!-- Results dynamically inserted here -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // App State
+    let currentCoords = { lat: 41.0082, lon: 28.9784, name: "İstanbul", country: "Türkiye" };
+    let chartInstance = null;
+
+    // AQI Helper (European Air Quality Index / US AQI Scale)
+    function getAqiDetails(aqi) {
+      if (aqi <= 50) {
+        return {
+          title: "İYİ",
+          desc: "Hava Kalitesi Mükemmel",
+          color: "#10b981",
+          glow: "rgba(16, 185, 129, 0.25)",
+          advice: "Açık hava aktiviteleri için harika bir gün. Pencereleri açıp rahatça havalandırabilirsiniz.",
+          outdoor: "Açık havada spor için ideal şartlar.",
+          vent: "Pencereleri gönül rahatlığıyla açın.",
+          sensitive: "Hassas bireyler için risk bulunmamaktadır.",
+          mask: "Maske takmaya gerek yoktur."
+        };
+      } else if (aqi <= 100) {
+        return {
+          title: "ORTA",
+          desc: "Hava Kalitesi Kabul Edilebilir",
+          color: "#f59e0b",
+          glow: "rgba(245, 158, 11, 0.25)",
+          advice: "Hava kalitesi genel kitle için uygundur ancak çok hassas bireyler hafif rahatsızlık hissedebilir.",
+          outdoor: "Dış mekan sporları için genel olarak uygundur.",
+          vent: "Havalandırma yapılabilir.",
+          sensitive: "Çok hassas kişiler aşırı efordan kaçınabilir.",
+          mask: "Genel kitle için maske gerekmez."
+        };
+      } else if (aqi <= 150) {
+        return {
+          title: "HASSAS",
+          desc: "Hassas Gruplar İçin Sağlıksız",
+          color: "#f97316",
+          glow: "rgba(249, 115, 22, 0.25)",
+          advice: "Akciğer/kalp hastaları, çocuklar ve yaşlılar açık hava aktivitelerini sınırlandırmalıdır.",
+          outdoor: "Yoğun dış mekan egzersizlerini azaltın.",
+          vent: "Pencereleri kapalı tutmakta fayda var.",
+          sensitive: "Astım hastaları inhalerlarını hazır bulundurmalı.",
+          mask: "Hassas kişilerin dışarıda maske takması önerilir."
+        };
+      } else if (aqi <= 200) {
+        return {
+          title: "SAĞLIKSIZ",
+          desc: "Hava Kirli ve Sağlıksız",
+          color: "#ef4444",
+          glow: "rgba(239, 68, 68, 0.3)",
+          advice: "Herkes sağlık etkileri yaşayabilir. Dışarıda uzun süre kalmaktan ve fiziksel efordan kaçının.",
+          outdoor: "Açık havada fiziksel aktiviteden kesinlikle kaçının.",
+          vent: "Pencereleri sıkıca kapatın ve hava temizleyici kullanın.",
+          sensitive: "Hassas gruplar kesinlikle dışarı çıkmamalıdır.",
+          mask: "Dışarı çıkarken N95/FFP2 maske takılması önerilir."
+        };
+      } else if (aqi <= 300) {
+        return {
+          title: "ÇOK SAĞLIKSIZ",
+          desc: "Ciddi Hava Kirliliği Alarmı",
+          color: "#8b5cf6",
+          glow: "rgba(139, 92, 246, 0.35)",
+          advice: "Tüm nüfus için acil durum uyarısı. Dış ortam aktivitelerini tamamen sonlandırın.",
+          outdoor: "Dışarı çıkmayın.",
+          vent: "Pencereleri asla açmayın.",
+          sensitive: "Tüm kronik hastalar evde kalmalıdır.",
+          mask: "Zorunlu çıkışlarda tam filtreli maske şarttır."
+        };
+      } else {
+        return {
+          title: "TEHLİKELİ",
+          desc: "Zehirli Hava Düzeyi",
+          color: "#991b1b",
+          glow: "rgba(153, 27, 27, 0.4)",
+          advice: "Aşırı tehlikeli hava koşulları. Evinizde hava filtreleme sistemlerini çalıştırın.",
+          outdoor: "Dış ortamda bulunmak ciddi sağlık riski taşır.",
+          vent: "Ev içi ortamı izole edin.",
+          sensitive: "Hayati tehlike söz konusudur.",
+          mask: "En üst düzey koruyucu maske şart."
+        };
+      }
+    }
+
+    // Fetch Air Quality & Weather Data from Open-Meteo
+    async function fetchAirQualityData(lat, lon, cityName, countryName) {
+      const loader = document.getElementById('loadingOverlay');
+      loader.classList.add('show');
+
+      try {
+        // Air Quality API
+        const aqUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=us_aqi,european_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone&hourly=us_aqi,pm2_5,pm10&forecast_days=2&timezone=auto`;
+        
+        // Weather API for Temp, Humidity, Wind
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m&timezone=auto`;
+
+        const [aqRes, weatherRes] = await Promise.all([
+          fetch(aqUrl).then(r => r.json()),
+          fetch(weatherUrl).then(r => r.json())
+        ]);
+
+        updateUI(aqRes, weatherRes, cityName, countryName);
+      } catch (err) {
+        console.error("Veri yüklenirken hata:", err);
+        alert("Hava kalitesi verisi alınırken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin.");
+      } finally {
+        loader.classList.remove('show');
+      }
+    }
+
+    function updateUI(aqData, weatherData, cityName, countryName) {
+      if (cityName) document.getElementById('cityName').textContent = cityName;
+      if (countryName) document.getElementById('countryName').textContent = countryName;
+
+      const current = aqData.current || {};
+      const aqi = Math.round(current.us_aqi ?? current.european_aqi ?? 35);
+      const pm25 = (current.pm2_5 ?? 8.4).toFixed(1);
+      const pm10 = (current.pm10 ?? 18.2).toFixed(1);
+      const no2 = (current.nitrogen_dioxide ?? 12.0).toFixed(1);
+      const o3 = (current.ozone ?? 45.0).toFixed(1);
+      const so2 = (current.sulphur_dioxide ?? 5.0).toFixed(1);
+      const co = (current.carbon_monoxide ?? 240).toFixed(0);
+
+      // Details based on AQI
+      const details = getAqiDetails(aqi);
+
+      // Hero Elements
+      document.getElementById('aqiVal').innerHTML = `${aqi} <span>AQI</span>`;
+      document.getElementById('aqiBadge').style.backgroundColor = `${details.color}22`;
+      document.getElementById('aqiBadge').style.borderColor = details.color;
+      document.getElementById('aqiBadge').style.color = details.color;
+      document.getElementById('aqiLevelText').textContent = details.title;
+      document.getElementById('aqiDesc').textContent = details.desc;
+      document.getElementById('aqiAdvice').textContent = details.advice;
+
+      document.getElementById('heroCard').style.setProperty('--glow-color', details.glow);
+
+      // Weather data
+      if (weatherData && weatherData.current) {
+        document.getElementById('tempVal').textContent = `${Math.round(weatherData.current.temperature_2m)} °C`;
+        document.getElementById('humidityVal').textContent = `${Math.round(weatherData.current.relative_humidity_2m)} %`;
+        document.getElementById('windVal').textContent = `${Math.round(weatherData.current.wind_speed_10m)} km/s`;
+      }
+
+      // Pollutants
+      document.getElementById('pm25Val').textContent = pm25;
+      updateMetricBar('pm25', pm25, 15, 35, 75);
+
+      document.getElementById('pm10Val').textContent = pm10;
+      updateMetricBar('pm10', pm10, 45, 100, 150);
+
+      document.getElementById('no2Val').textContent = no2;
+      updateMetricBar('no2', no2, 40, 90, 120);
+
+      document.getElementById('o3Val').textContent = o3;
+      updateMetricBar('o3', o3, 60, 120, 180);
+
+      document.getElementById('so2Val').textContent = so2;
+      updateMetricBar('so2', so2, 20, 50, 100);
+
+      document.getElementById('coVal').textContent = co;
+      updateMetricBar('co', co, 400, 1000, 2000);
+
+      // Health recommendations
+      document.getElementById('recOutdoorText').textContent = details.outdoor;
+      document.getElementById('recVentText').textContent = details.vent;
+      document.getElementById('recSensitiveText').textContent = details.sensitive;
+      document.getElementById('recMaskText').textContent = details.mask;
+
+      // Render Forecast Chart
+      renderChart(aqData.hourly);
+    }
+
+    function updateMetricBar(prefix, val, goodLimit, modLimit, unhealthyLimit) {
+      val = parseFloat(val);
+      const bar = document.getElementById(`${prefix}Bar`);
+      const badge = document.getElementById(`${prefix}Badge`);
+      
+      let pct = (val / unhealthyLimit) * 100;
+      if (pct > 100) pct = 100;
+      if (pct < 10) pct = 10;
+      bar.style.width = `${pct}%`;
+
+      if (val <= goodLimit) {
+        bar.style.background = "#10b981";
+        badge.style.color = "#10b981";
+        badge.textContent = "İyi";
+      } else if (val <= modLimit) {
+        bar.style.background = "#f59e0b";
+        badge.style.color = "#f59e0b";
+        badge.textContent = "Orta";
+      } else {
+        bar.style.background = "#ef4444";
+        badge.style.color = "#ef4444";
+        badge.textContent = "Yüksek";
+      }
+    }
+
+    function renderChart(hourlyData) {
+      if (!hourlyData || !hourlyData.time) return;
+
+      const currentHourIndex = new Date().getHours();
+      // Get next 24 hours
+      const labels = [];
+      const values = [];
+
+      for (let i = 0; i < 24; i++) {
+        const idx = currentHourIndex + i;
+        if (idx < hourlyData.time.length) {
+          const timeStr = hourlyData.time[idx];
+          const hour = new Date(timeStr).getHours();
+          labels.push(`${hour}:00`);
+          values.push(hourlyData.us_aqi ? hourlyData.us_aqi[idx] : 35);
+        }
+      }
+
+      const ctx = document.getElementById('trendChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, 160);
+      gradient.addColorStop(0, 'rgba(56, 189, 248, 0.45)');
+      gradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            borderColor: '#38bdf8',
+            borderWidth: 2.5,
+            fill: true,
+            backgroundColor: gradient,
+            tension: 0.4,
+            pointRadius: 2,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              titleColor: '#fff',
+              bodyColor: '#38bdf8',
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1,
+              callbacks: {
+                label: (ctx) => ` AQI: ${ctx.parsed.y}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#64748b', font: { size: 10 }, maxTicksLimit: 7 }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#64748b', font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    // Geolocation Support
+    document.getElementById('btnGps').addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        alert("Cihazınızda konum servisi desteklenmiyor.");
+        return;
+      }
+      const loader = document.getElementById('loadingOverlay');
+      loader.classList.add('show');
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          try {
+            // Reverse geocode with Open-Meteo or BigDataCloud
+            const geoRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=tr`).then(r => r.json());
+            const city = geoRes.city || geoRes.locality || "Bulunduğunuz Konum";
+            const country = geoRes.countryName || "Türkiye";
+            currentCoords = { lat, lon, name: city, country };
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            fetchAirQualityData(lat, lon, city, country);
+          } catch(e) {
+            currentCoords = { lat, lon, name: "Konumunuz", country: "" };
+            fetchAirQualityData(lat, lon, "Konumunuz", "");
+          }
+        },
+        (err) => {
+          loader.classList.remove('show');
+          alert("Konum izni alınamadı: " + err.message);
+        },
+        { timeout: 10000 }
+      );
+    });
+
+    // Refresh Button
+    document.getElementById('btnRefresh').addEventListener('click', () => {
+      fetchAirQualityData(currentCoords.lat, currentCoords.lon, currentCoords.name, currentCoords.country);
+    });
+
+    // Chips selection
+    document.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        const lat = parseFloat(chip.dataset.lat);
+        const lon = parseFloat(chip.dataset.lon);
+        const name = chip.dataset.name;
+        currentCoords = { lat, lon, name, country: "Türkiye" };
+        fetchAirQualityData(lat, lon, name, "Türkiye");
+      });
+    });
+
+    // Modal Search
+    const searchModal = document.getElementById('searchModal');
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+
+    document.getElementById('btnOpenSearch').addEventListener('click', () => {
+      searchModal.classList.add('active');
+      searchInput.value = '';
+      searchResults.innerHTML = '';
+      setTimeout(() => searchInput.focus(), 150);
+    });
+
+    document.getElementById('btnCloseModal').addEventListener('click', () => {
+      searchModal.classList.remove('active');
+    });
+
+    let searchTimeout = null;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      const query = e.target.value.trim();
+      if (query.length < 2) {
+        searchResults.innerHTML = '';
+        return;
+      }
+
+      searchTimeout = setTimeout(async () => {
+        try {
+          const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=tr&format=json`);
+          const data = await res.json();
+          searchResults.innerHTML = '';
+
+          if (!data.results || data.results.length === 0) {
+            searchResults.innerHTML = '<div style="color: #64748b; font-size:13px; text-align:center; padding:12px;">Sonuç bulunamadı</div>';
+            return;
+          }
+
+          data.results.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'search-result-item';
+            row.innerHTML = `
+              <div>
+                <strong style="color: #fff; font-size: 14px;">${item.name}</strong>
+                <div style="font-size: 11px; color: #94a3b8;">${item.admin1 ? item.admin1 + ', ' : ''}${item.country || ''}</div>
+              </div>
+              <i data-lucide="chevron-right" style="color: #64748b; width: 16px; height: 16px;"></i>
+            `;
+            row.addEventListener('click', () => {
+              currentCoords = {
+                lat: item.latitude,
+                lon: item.longitude,
+                name: item.name,
+                country: item.country || ""
+              };
+              document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+              searchModal.classList.remove('active');
+              fetchAirQualityData(item.latitude, item.longitude, item.name, item.country || "");
+            });
+            searchResults.appendChild(row);
+          });
+          lucide.createIcons();
+        } catch(err) {
+          console.error(err);
+        }
+      }, 300);
+    });
+
+    // Close on outside click
+    searchModal.addEventListener('click', (e) => {
+      if (e.target === searchModal) searchModal.classList.remove('active');
+    });
+
+    // Initial Load (Istanbul)
+    fetchAirQualityData(currentCoords.lat, currentCoords.lon, currentCoords.name, currentCoords.country);
+  </script>
+</body>
+</html>

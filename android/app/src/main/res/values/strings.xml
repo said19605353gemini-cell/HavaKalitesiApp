@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">HavaKalitesi</string>
+    <string name="title_activity_main">HavaKalitesi</string>
+    <string name="package_name">com.havakalitesi.app</string>
+    <string name="custom_url_scheme">com.havakalitesi.app</string>
+</resources>
