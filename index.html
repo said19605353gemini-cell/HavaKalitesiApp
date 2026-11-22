@@ -1,821 +1,665 @@
 <!DOCTYPE html>
 <html lang="tr">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Hava Kalitesi ve Kirlilik Radarı</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Hava Kalitesi Radar Mobil</title>
+    <meta name="theme-color" content="#0B1120">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet">
+        html, body {
+            background-color: #0B1120;
+            color: #F8FAFC;
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+        }
 
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        body {
+            display: flex;
+            justify-content: center;
+        }
 
-  <style>
-    :root {
-      color-scheme: dark;
-      --bg: #090e17;
-      --card-bg: rgba(20, 28, 48, 0.85);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --primary: #38bdf8;
-      --good: #10b981;
-      --mod: #f59e0b;
-      --bad: #ef4444;
-      --safe-top: env(safe-area-inset-top, 24px);
-      --safe-bottom: env(safe-area-inset-bottom, 24px);
-    }
+        .app-shell {
+            width: 100%;
+            max-width: 600px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: #0B1120;
+            padding-bottom: 75px;
+            overflow-x: hidden;
+        }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-    }
+        /* HEADER */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.96);
+            backdrop-filter: blur(12px);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #1E293B;
+            width: 100%;
+        }
 
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: var(--bg);
-      background-image:
-        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
-      background-attachment: fixed;
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      padding-top: var(--safe-top);
-      padding-bottom: calc(var(--safe-bottom) + 30px);
-    }
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
 
-    .container {
-      width: 100%;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 12px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+        .header-badge {
+            background: #0284C7;
+            color: white;
+            border-radius: 8px;
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+        }
 
-    /* Top Brand & Dual Time */
-    .header-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+        .header-text h1 {
+            font-size: 15px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
 
-    .app-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+        .header-text p {
+            font-size: 11px;
+            color: #38BDF8;
+            font-weight: 600;
+        }
 
-    .brand-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #0284c7, #38bdf8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #070b14;
-      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
-    }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-    .brand-title {
-      font-size: 19px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
+        .btn-refresh {
+            background: #1E293B;
+            border: 1px solid #334155;
+            color: #38BDF8;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
 
-    .brand-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
+        /* STATS (3 Kutulu DepremAppMobile Standardı) */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding: 12px 16px 6px 16px;
+            width: 100%;
+        }
 
-    .dual-clock {
-      display: flex;
-      gap: 6px;
-    }
+        .stat-card {
+            background: #1E293B;
+            border-radius: 10px;
+            padding: 8px 6px;
+            border: 1px solid #334155;
+            text-align: center;
+            min-width: 0;
+        }
 
-    .clock-box {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 5px 8px;
-      text-align: right;
-    }
+        .stat-title {
+            font-size: 9px;
+            color: #94A3B8;
+            font-weight: 700;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
-    .clock-lbl {
-      font-size: 9px;
-      color: var(--text-muted);
-      font-weight: 700;
-    }
+        .stat-val {
+            font-size: 18px;
+            font-weight: 800;
+            margin-top: 2px;
+            white-space: nowrap;
+        }
 
-    .clock-val {
-      font-size: 12px;
-      font-weight: 800;
-      color: var(--primary);
-    }
+        /* FILTERS */
+        .filter-section {
+            padding: 8px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
 
-    /* Scope Tabs (Türkiye / Global) */
-    .scope-tabs {
-      display: flex;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 4px;
-      gap: 4px;
-    }
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: #1E293B;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 8px 12px;
+            width: 100%;
+        }
 
-    .scope-btn {
-      flex: 1;
-      padding: 9px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-muted);
-      border: none;
-      background: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
+        .search-box input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #FFF;
+            width: 100%;
+            font-size: 13px;
+            margin-left: 8px;
+        }
 
-    .scope-btn.active {
-      background: var(--primary);
-      color: #04111d;
-      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.3);
-    }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
 
-    /* Summary Stats (DepremTakipGui Standardı: Responsive 2x2 veya 4 sütun) */
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      width: 100%;
-    }
+        .filter-group-title {
+            font-size: 10px;
+            color: #64748B;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
 
-    @media (min-width: 480px) {
-      .stats-row {
-        grid-template-columns: repeat(4, 1fr);
-      }
-    }
+        .filter-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            width: 100%;
+        }
 
-    .stat-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 12px 10px;
-      text-align: center;
-      backdrop-filter: blur(12px);
-      min-width: 0;
-      /* İç içe taşmayı engeller */
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
-    }
+        .pill {
+            padding: 5px 11px;
+            border-radius: 14px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #1E293B;
+            color: #94A3B8;
+            border: 1px solid #334155;
+            cursor: pointer;
+            user-select: none;
+            transition: 0.15s ease;
+        }
 
-    .stat-val {
-      font-size: 20px;
-      font-weight: 800;
-      line-height: 1.2;
-      margin-bottom: 2px;
-      white-space: nowrap;
-    }
+        .pill.active {
+            background: #0284C7;
+            color: #FFF;
+            border-color: #0284C7;
+        }
 
-    .stat-lbl {
-      font-size: 11px;
-      color: var(--text-muted);
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      width: 100%;
-    }
+        /* LIST OF CARDS */
+        .eq-list {
+            padding: 8px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
 
-    /* Live Leaflet Map */
-    .map-box {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 20px;
-      padding: 10px;
-      backdrop-filter: blur(12px);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+        .eq-card {
+            background: #1E293B;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            min-width: 0;
+            cursor: pointer;
+        }
 
-    #map {
-      width: 100%;
-      height: 220px;
-      border-radius: 14px;
-      z-index: 10;
-    }
+        .eq-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+        }
 
-    /* Time Range Pills (DepremTakipGui Standardı: 24s, 7G, 30G, 90G, 1 Sene, 3 Sene) */
-        .time-scroll {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      width: 100%;
-      box-sizing: border-box;
-    }
+        .eq-badge {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+        }
 
-    .time-pill {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 8px 4px;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-muted);
-      cursor: pointer;
-      text-align: center;
-      white-space: nowrap;
-      transition: all 0.2s;
-    }
+        .eq-badge .mag {
+            font-size: 17px;
+            line-height: 1;
+        }
 
-    .time-pill.active {
-      background: rgba(56, 189, 248, 0.2);
-      border-color: var(--primary);
-      color: var(--primary);
-    }
+        .eq-badge .type {
+            font-size: 8px;
+            text-transform: uppercase;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
 
-    /* Search & Filter Bar */
-    .filter-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+        .eq-info {
+            flex: 1;
+            min-width: 0;
+        }
 
-    .search-box {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
+        .eq-location {
+            font-size: 14px;
+            font-weight: 700;
+            color: #F8FAFC;
+            line-height: 1.3;
+        }
 
-    .search-box input {
-      width: 100%;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 10px 12px 10px 38px;
-      color: #fff;
-      font-size: 14px;
-      outline: none;
-      font-family: inherit;
-    }
+        .eq-sub {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+            font-size: 11px;
+            color: #94A3B8;
+            flex-wrap: wrap;
+        }
 
-    .search-box i {
-      position: absolute;
-      left: 12px;
-      color: var(--text-muted);
-    }
+        .eq-country-tag {
+            background: #334155;
+            color: #38BDF8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
 
-    .filter-row {
-      display: flex;
-      gap: 8px;
-    }
+        .eq-details {
+            display: none;
+            padding-top: 8px;
+            border-top: 1px dashed #334155;
+            font-size: 12px;
+            color: #CBD5E1;
+            line-height: 1.5;
+        }
 
-    .filter-select {
-      flex: 1;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 8px 10px;
-      color: #fff;
-      font-size: 12px;
-      font-weight: 600;
-      outline: none;
-      font-family: inherit;
-    }
+        .eq-card.expanded .eq-details {
+            display: block;
+        }
 
-    /* Station List & Accordion */
-    .station-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+        /* BOTTOM NAV */
+        nav.bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 600px;
+            height: 56px;
+            background: rgba(15, 23, 42, 0.98);
+            border-top: 1px solid #1E293B;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+        }
 
-    .station-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 18px;
-      padding: 14px 16px;
-      backdrop-filter: blur(12px);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      position: relative;
-      cursor: pointer;
-      overflow: hidden;
-      transition: all 0.2s;
-    }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            color: #64748B;
+            font-size: 11px;
+            cursor: pointer;
+        }
 
-    .station-card:active {
-      transform: scale(0.99);
-    }
+        .nav-item.active {
+            color: #38BDF8;
+        }
 
-    .station-card::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 5px;
-      background: var(--card-accent, #10b981);
-    }
+        /* MAP VIEW */
+        #map-view {
+            display: none;
+            position: fixed;
+            top: 58px;
+            bottom: 56px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 600px;
+            z-index: 500;
+        }
 
-    .card-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+        #map {
+            width: 100%;
+            height: 100%;
+        }
 
-    .card-city {
-      font-size: 15px;
-      font-weight: 700;
-      color: #fff;
-    }
+        .leaflet-container { background: #0B1120 !important; }
 
-    .card-aqi {
-      font-size: 18px;
-      font-weight: 800;
-      padding: 3px 10px;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.08);
-      display: flex;
-      align-items: baseline;
-      gap: 4px;
-    }
+        /* PAGINATION */
+        .pagination-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 16px 14px 20px 14px;
+            width: 100%;
+        }
 
-    .chips-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
+        .page-btn {
+            min-width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: #1E293B;
+            color: #94A3B8;
+            border: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
 
-    .chip {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 8px;
-      padding: 4px 8px;
-      font-size: 11px;
-      color: #cbd5e1;
-    }
-
-    .chip strong {
-      color: #fff;
-    }
-
-    .accordion-body {
-      display: none;
-      flex-direction: column;
-      gap: 8px;
-      padding-top: 10px;
-      margin-top: 4px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-      font-size: 12px;
-      color: #cbd5e1;
-    }
-
-    .station-card.expanded .accordion-body {
-      display: flex;
-    }
-
-    /* Pagination */
-    .pagination-bar {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 6px;
-      margin-top: 8px;
-    }
-
-    .page-btn {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      min-width: 38px;
-      height: 38px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-muted);
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .page-btn.active {
-      background: var(--primary);
-      color: #04111d;
-      border-color: var(--primary);
-    }
-      /* Option text color fix: Windows beyaz pop-up açtığı için option metinleri daima koyu/siyah ve net görünür */
-    select option {
-      background-color: #ffffff !important;
-      color: #0f172a !important;
-      font-weight: 700 !important;
-      font-size: 13px !important;
-      padding: 10px !important;
-    }
-
-    select option:checked {
-      background-color: #3b82f6 !important;
-      color: #ffffff !important;
-    }
-      /* Harita Koyu Mod Efekti (API Key İstemez) */
-    /* Esri Native Dark Canvas */
-    .leaflet-container { background: #0b0f19 !important; }
-  </style>
+        .page-btn.active {
+            background: #0284C7;
+            color: #FFF;
+            border-color: #0284C7;
+        }
+    </style>
 </head>
-
 <body>
 
-  <div class="container">
-
-    <!-- Top Bar with Clocks -->
-    <div class="header-bar">
-      <div class="app-brand">
-        <div class="brand-icon">
-          <i data-lucide="activity" style="width: 24px; height: 24px;"></i>
-        </div>
-        <div>
-          <div class="brand-title">Hava Kalitesi Radar</div>
-          <div class="brand-sub">Canlı & Geçmiş Ölçüm Radarı</div>
-        </div>
-      </div>
-      <div class="dual-clock">
-        <div class="clock-box">
-          <div class="clock-lbl">TR Saati</div>
-          <div class="clock-val" id="trClock">--:--:--</div>
-        </div>
-        <div class="clock-box">
-          <div class="clock-lbl">UTC Saati</div>
-          <div class="clock-val" id="utcClock">--:--:--</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Scope Switcher: Türkiye / Global -->
-    <div class="scope-tabs">
-      <button class="scope-btn active" data-scope="TR">
-        <span>🇹🇷</span> Türkiye Geneli
-      </button>
-      <button class="scope-btn" data-scope="GLOBAL">
-        <span>🌐</span> Dünya Başkentleri & Metropoller
-      </button>
-    </div>
-
-    <!-- Summary Stats (DepremTakipGui Standardı) -->
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-val" style="color: #38bdf8;" id="statTotal">18</div>
-        <div class="stat-lbl">İstasyon</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val" style="color: #10b981;" id="statClean">11</div>
-        <div class="stat-lbl">Temiz Hava</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val" style="color: #f59e0b;" id="statMod">5</div>
-        <div class="stat-lbl">Orta Seviye</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val" style="color: #ef4444;" id="statBad">2</div>
-        <div class="stat-lbl">Kritik Kirlilik</div>
-      </div>
-    </div>
-
-    <!-- Live Map -->
-    <div class="map-box">
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 2px 4px;">
-        <span style="font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
-          <i data-lucide="map" style="width: 15px; height: 15px; color: #38bdf8;"></i> Canlı Harita & İstasyonlar
-        </span>
-        <span style="font-size: 11px; color: #10b981; font-weight: 600;">● Canlı Sinyal</span>
-      </div>
-      <div id="map"></div>
-    </div>
-
-    <!-- Time Range Tabs (DepremTakipGui Standardı) -->
-    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; margin-top: 2px;">
-      Tarihsel Dönem & Arşiv:
-    </div>
-    <div class="time-scroll">
-      <div class="time-pill active" data-days="1">Son 24 Saat</div>
-      <div class="time-pill" data-days="7">Son 7 Gün</div>
-      <div class="time-pill" data-days="30">Son 30 Gün</div>
-      <div class="time-pill" data-days="90">Son 90 Gün</div>
-      <div class="time-pill" data-days="365">1 Sene (Arşiv)</div>
-      <div class="time-pill" data-days="1095">3 Sene (Tarihsel)</div>
-    </div>
-
-    <!-- Controls: Filter & Sort -->
-    <div class="filter-card">
-      <div class="search-box">
-        <i data-lucide="search" style="width: 18px; height: 18px;"></i>
-        <input type="text" id="searchInput" placeholder="Şehir veya ülke ara (İstanbul, Ankara, Berlin, Tokyo)...">
-      </div>
-      <div class="filter-row">
-        <select class="filter-select" id="sortSelect">
-          <option value="aqi_desc">🔥 En Yüksek Kirlilik (Kötüden İyiyeye)</option>
-          <option value="aqi_asc">🌱 En Temiz Hava (İyiden Kötüye)</option>
-          <option value="name_asc">🔤 İsim Sırası (A - Z)</option>
-        </select>
-        <select class="filter-select" id="levelSelect">
-          <option value="ALL">Tüm Seviyeler</option>
-          <option value="GOOD">Sadece Temiz (0-50 AQI)</option>
-          <option value="MOD">Orta Seviye (51-100 AQI)</option>
-          <option value="BAD">Hassas & Kirlilik (101+ AQI)</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Results Count -->
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 4px;">
-      <span style="font-size: 15px; font-weight: 700; color: #fff;">Ölçüm Noktaları</span>
-      <span style="font-size: 11px; color: var(--text-muted);" id="stationCount">0 kayıt</span>
-    </div>
-
-    <!-- Station List -->
-    <div class="station-list" id="stationList"></div>
-
-    <!-- Pagination -->
-    <div class="pagination-bar" id="paginationBar"></div>
-
-  </div>
-
-  <script>
-    // Dual Time Engine
-    function updateClocks() {
-      const now = new Date();
-      document.getElementById('trClock').textContent = now.toLocaleTimeString('tr-TR', { timeZone: 'Europe/Istanbul' });
-      document.getElementById('utcClock').textContent = now.toLocaleTimeString('en-GB', { timeZone: 'UTC' });
-    }
-    setInterval(updateClocks, 1000);
-    updateClocks();
-
-    // Data Store
-    const stations = [
-      // TR
-      { id: 1, scope: 'TR', name: 'İstanbul / Kadıköy', lat: 40.9910, lon: 29.0250, aqi: 42, pm25: 10.2, pm10: 22.4, no2: 18.0, o3: 35.0, temp: 16, status: 'Temiz', color: '#10b981', recordDate: 'Bugün' },
-      { id: 2, scope: 'TR', name: 'İstanbul / Mecidiyeköy', lat: 41.0660, lon: 28.9930, aqi: 78, pm25: 25.4, pm10: 48.0, no2: 42.1, o3: 28.0, temp: 15, status: 'Orta', color: '#f59e0b', recordDate: 'Bugün' },
-      { id: 3, scope: 'TR', name: 'Ankara / Çankaya Kızılay', lat: 39.9208, lon: 32.8541, aqi: 65, pm25: 19.8, pm10: 38.5, no2: 32.0, o3: 40.0, temp: 12, status: 'Orta', color: '#f59e0b', recordDate: 'Bugün' },
-      { id: 4, scope: 'TR', name: 'İzmir / Konak Alsancak', lat: 38.4192, lon: 27.1287, aqi: 35, pm25: 8.4, pm10: 18.0, no2: 14.5, o3: 44.0, temp: 19, status: 'Temiz', color: '#10b981', recordDate: 'Bugün' },
-      { id: 5, scope: 'TR', name: 'Bursa / Nilüfer', lat: 40.2150, lon: 28.9800, aqi: 88, pm25: 29.2, pm10: 55.0, no2: 38.0, o3: 30.0, temp: 14, status: 'Orta', color: '#f59e0b', recordDate: 'Bugün' },
-      { id: 6, scope: 'TR', name: 'Antalya / Muratpaşa', lat: 36.8841, lon: 30.7056, aqi: 24, pm25: 5.8, pm10: 14.2, no2: 11.0, o3: 52.0, temp: 22, status: 'Temiz', color: '#10b981', recordDate: 'Bugün' },
-      { id: 7, scope: 'TR', name: 'Kocaeli / Dilovası Sanayi', lat: 40.7850, lon: 29.5400, aqi: 142, pm25: 52.0, pm10: 92.0, no2: 60.0, o3: 24.0, temp: 15, status: 'Kritik Kirlilik', color: '#ef4444', recordDate: 'Bugün' },
-      { id: 8, scope: 'TR', name: 'Trabzon / Ortahisar Sahil', lat: 41.0027, lon: 39.7168, aqi: 22, pm25: 5.1, pm10: 12.0, no2: 9.0, o3: 48.0, temp: 13, status: 'Temiz', color: '#10b981', recordDate: 'Bugün' },
-
-      // Global
-      { id: 101, scope: 'GLOBAL', name: 'Hindistan / Yeni Delhi', lat: 28.6139, lon: 77.2090, aqi: 280, pm25: 180.0, pm10: 300.0, no2: 85.0, o3: 42.0, temp: 24, status: 'Kritik Kirlilik', color: '#ef4444', recordDate: 'Bugün' },
-      { id: 102, scope: 'GLOBAL', name: 'Çin / Pekin', lat: 39.9042, lon: 116.4074, aqi: 130, pm25: 47.0, pm10: 85.0, no2: 50.0, o3: 29.0, temp: 10, status: 'Kritik Kirlilik', color: '#ef4444', recordDate: 'Bugün' },
-      { id: 103, scope: 'GLOBAL', name: 'İngiltere / Londra', lat: 51.5074, lon: -0.1278, aqi: 32, pm25: 7.5, pm10: 16.0, no2: 24.0, o3: 38.0, temp: 11, status: 'Temiz', color: '#10b981', recordDate: 'Bugün' },
-      { id: 104, scope: 'GLOBAL', name: 'Fransa / Paris', lat: 48.8566, lon: 2.3522, aqi: 44, pm25: 10.5, pm10: 20.0, no2: 28.0, o3: 42.0, temp: 13, status: 'Temiz', color: '#10b981', recordDate: 'Bugün' },
-      { id: 105, scope: 'GLOBAL', name: 'Almanya / Berlin', lat: 52.5200, lon: 13.4050, aqi: 38, pm25: 8.8, pm10: 18.0, no2: 19.0, o3: 46.0, temp: 9, status: 'Temiz', color: '#10b981', recordDate: 'Bugün' },
-      { id: 106, scope: 'GLOBAL', name: 'Japonya / Tokyo', lat: 35.6762, lon: 139.6503, aqi: 26, pm25: 6.2, pm10: 14.0, no2: 18.0, o3: 49.0, temp: 15, status: 'Temiz', color: '#10b981', recordDate: 'Bugün' },
-      { id: 107, scope: 'GLOBAL', name: 'Mısır / Kahire', lat: 30.0444, lon: 31.2357, aqi: 165, pm25: 67.0, pm10: 128.0, no2: 57.0, o3: 32.0, temp: 26, status: 'Kritik Kirlilik', color: '#ef4444', recordDate: 'Bugün' }
-    ];
-
-    let currentScope = 'TR';
-    let searchQuery = '';
-    let sortMode = 'aqi_desc';
-    let levelFilter = 'ALL';
-    let selectedDays = 1;
-    let currentPage = 1;
-    const pageSize = 5;
-
-    let map = null;
-    let markersGroup = null;
-
-    function initMap() {
-      map = L.map('map', { attributionControl: false }).setView([39.0, 35.0], 5);
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 }).addTo(map);
-      markersGroup = L.layerGroup().addTo(map);
-      updateMap();
-    }
-
-    function updateMap() {
-      if (!markersGroup) return;
-      markersGroup.clearLayers();
-
-      const items = getFilteredData();
-      items.forEach(st => {
-        const marker = L.circleMarker([st.lat, st.lon], {
-          radius: 8,
-          fillColor: st.color,
-          color: '#ffffff',
-          weight: 1.5,
-          opacity: 1,
-          fillOpacity: 0.85
-        });
-
-        marker.bindPopup(`
-          <div style="font-family: inherit; font-size: 13px; color: #0f172a;">
-            <strong>${st.name}</strong><br>
-            AQI: <strong style="color: ${st.color};">${st.aqi} (${st.status})</strong><br>
-            PM2.5: ${st.pm25} µg/m³
-          </div>
-        `);
-        markersGroup.addLayer(marker);
-      });
-
-      if (currentScope === 'TR') {
-        map.setView([39.0, 35.0], 5);
-      } else {
-        map.setView([30.0, 10.0], 2);
-      }
-    }
-
-    function getFilteredData() {
-      return stations.filter(s => {
-        const matchScope = s.scope === currentScope;
-        const matchSearch = searchQuery === '' || s.name.toLowerCase().includes(searchQuery.toLowerCase());
-        let matchLevel = true;
-        if (levelFilter === 'GOOD') matchLevel = s.aqi <= 50;
-        else if (levelFilter === 'MOD') matchLevel = s.aqi > 50 && s.aqi <= 100;
-        else if (levelFilter === 'BAD') matchLevel = s.aqi > 100;
-        return matchScope && matchSearch && matchLevel;
-      }).sort((a, b) => {
-        if (sortMode === 'aqi_desc') return b.aqi - a.aqi;
-        if (sortMode === 'aqi_asc') return a.aqi - b.aqi;
-        if (sortMode === 'name_asc') return a.name.localeCompare(b.name);
-        return 0;
-      });
-    }
-
-    // Animate Number Counting (Otomatik Sayaç Efekti)
-    function animateValue(id, target) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      const current = parseInt(el.textContent) || 0;
-      if (current === target) return;
-      const duration = 400;
-      const startTime = performance.now();
-
-      function update(now) {
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const ease = 1 - Math.pow(1 - progress, 3);
-        const val = Math.round(current + (target - current) * ease);
-        el.textContent = val;
-        if (progress < 1) requestAnimationFrame(update);
-        else el.textContent = target;
-      }
-      requestAnimationFrame(update);
-    }
-
-    function renderUI() {
-      const filtered = getFilteredData();
-      document.getElementById('stationCount').textContent = `${filtered.length} istasyon listelendi`;
-
-      // Update Top Stats Otomatik Olarak Filtrelenen Veriye Göre Sayar
-      const total = filtered.length;
-      const clean = filtered.filter(s => s.aqi <= 50).length;
-      const mod = filtered.filter(s => s.aqi > 50 && s.aqi <= 100).length;
-      const bad = filtered.filter(s => s.aqi > 100).length;
-
-      animateValue('statTotal', total);
-      animateValue('statClean', clean);
-      animateValue('statMod', mod);
-      animateValue('statBad', bad);
-
-      // Pagination
-      const totalPages = Math.ceil(filtered.length / pageSize) || 1;
-      if (currentPage > totalPages) currentPage = totalPages;
-      const start = (currentPage - 1) * pageSize;
-      const pageItems = filtered.slice(start, start + pageSize);
-
-      const listContainer = document.getElementById('stationList');
-      listContainer.innerHTML = '';
-
-      pageItems.forEach(st => {
-        const card = document.createElement('div');
-        card.className = 'station-card';
-        card.style.setProperty('--card-accent', st.color);
-        card.innerHTML = `
-          <div class="card-top">
-            <div class="card-city">${st.name}</div>
-            <div class="card-aqi" style="color: ${st.color};">
-              ${st.aqi} <span style="font-size: 10px; color: var(--text-muted);">AQI</span>
+    <div class="app-shell">
+        <!-- HEADER -->
+        <header>
+            <div class="header-title">
+                <div class="header-badge">💨</div>
+                <div class="header-text">
+                    <h1>HAVA KALİTESİ RADAR</h1>
+                    <p id="clock-display">TR: --:-- | UTC: --:--</p>
+                </div>
             </div>
-          </div>
-          <div class="chips-row">
-            <span class="chip">PM2.5: <strong>${st.pm25} µg</strong></span>
-            <span class="chip">PM10: <strong>${st.pm10} µg</strong></span>
-            <span class="chip">Sıcaklık: <strong>${st.temp} °C</strong></span>
-            <span class="chip" style="color: ${st.color}; font-weight:700;">${st.status}</span>
-          </div>
-          <div class="accordion-body">
-            <div>Koordinat: <strong>${st.lat}, ${st.lon}</strong></div>
-            <div>Kirleticiler: <strong>NO₂: ${st.no2} µg/m³</strong> | <strong>O₃: ${st.o3} µg/m³</strong></div>
-            <div>Dönem Arşivi: <strong>${selectedDays === 1 ? 'Anlık / 24 Saat' : selectedDays + ' Günlük Ortalama'}</strong></div>
-            <div style="font-size: 11px; color: #38bdf8;">Haritada konuma gitmek ve detayları görmek için tıklayın.</div>
-          </div>
-        `;
+            <div class="header-actions">
+                <button class="btn-refresh" onclick="renderAll()">🔄 Yenile</button>
+            </div>
+        </header>
 
-        card.addEventListener('click', () => {
-          card.classList.toggle('expanded');
-          map.setView([st.lat, st.lon], 9);
-        });
+        <!-- LIST VIEW -->
+        <main id="list-view">
+            <!-- 3 Stat Kutusu (DepremAppMobile Birebir) -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">Toplam Ölçüm</div>
+                    <div class="stat-val" id="statTotal" style="color: #38BDF8;">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Temiz Hava (İyi)</div>
+                    <div class="stat-val" id="statClean" style="color: #4ADE80;">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Kirlilik Riski</div>
+                    <div class="stat-val" id="statBad" style="color: #F87171;">0</div>
+                </div>
+            </div>
 
-        listContainer.appendChild(card);
-      });
+            <div class="filter-section">
+                <!-- Arama -->
+                <div class="search-box">
+                    <span>🔍</span>
+                    <input type="text" id="searchInput" placeholder="Şehir veya ülke ara (İstanbul, Ankara, Berlin)..." oninput="applyFilters()">
+                </div>
 
-      renderPagination(totalPages);
-      updateMap();
-      lucide.createIcons();
-    }
+                <!-- Kapsam (TR / Global) -->
+                <div class="filter-group">
+                    <div class="filter-wrap">
+                        <div class="pill active" id="pill-tr" onclick="setScope('TR', this)">🇹🇷 Türkiye İstasyonları</div>
+                        <div class="pill" id="pill-global" onclick="setScope('GLOBAL', this)">🌐 Dünya Metropolleri</div>
+                    </div>
+                </div>
 
-    function renderPagination(totalPages) {
-      const container = document.getElementById('paginationBar');
-      container.innerHTML = '';
-      if (totalPages <= 1) return;
+                <!-- Zaman Aralığı (Genişletilmiş DepremAppMobile Tarihleri) -->
+                <div class="filter-group">
+                    <span class="filter-group-title">Tarih Aralığı:</span>
+                    <div class="filter-wrap">
+                        <div class="pill active" onclick="setTimeRange(1, this)">24 Saat</div>
+                        <div class="pill" onclick="setTimeRange(7, this)">7 Gün</div>
+                        <div class="pill" onclick="setTimeRange(30, this)">30 Gün</div>
+                        <div class="pill" onclick="setTimeRange(90, this)">90 Gün</div>
+                        <div class="pill" onclick="setTimeRange(365, this)">1 Sene</div>
+                        <div class="pill" onclick="setTimeRange(1095, this)">3 Sene</div>
+                    </div>
+                </div>
+            </div>
 
-      const prevBtn = document.createElement('button');
-      prevBtn.className = 'page-btn';
-      prevBtn.textContent = '◀';
-      prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; renderUI(); } };
-      container.appendChild(prevBtn);
+            <!-- İstasyon Listesi -->
+            <div class="eq-list" id="cardList"></div>
 
-      for (let p = 1; p <= totalPages; p++) {
-        const btn = document.createElement('button');
-        btn.className = `page-btn ${p === currentPage ? 'active' : ''}`;
-        btn.textContent = p;
-        btn.onclick = () => { currentPage = p; renderUI(); };
-        container.appendChild(btn);
-      }
+            <!-- Sayfalama -->
+            <div class="pagination-container" id="pagination"></div>
+        </main>
 
-      const nextBtn = document.createElement('button');
-      nextBtn.className = 'page-btn';
-      nextBtn.textContent = '▶';
-      nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; renderUI(); } };
-      container.appendChild(nextBtn);
-    }
+        <!-- MAP VIEW (Alt Menüden Geçiş Yapılan Tam Ekran Harita) -->
+        <div id="map-view">
+            <div id="map"></div>
+        </div>
 
-    // Handlers
-    document.querySelectorAll('.scope-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.scope-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentScope = btn.dataset.scope;
-        currentPage = 1;
-        renderUI();
-      });
-    });
+        <!-- BOTTOM NAV BAR (DepremAppMobile Birebir) -->
+        <nav class="bottom-nav">
+            <div class="nav-item active" id="nav-list" onclick="switchTab('list')">
+                <span style="font-size: 18px;">📋</span>
+                <span>Liste</span>
+            </div>
+            <div class="nav-item" id="nav-map" onclick="switchTab('map')">
+                <span style="font-size: 18px;">🗺️</span>
+                <span>Harita</span>
+            </div>
+        </nav>
+    </div>
 
-    document.querySelectorAll('.time-pill').forEach(pill => {
-      pill.addEventListener('click', () => {
-        document.querySelectorAll('.time-pill').forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
-        selectedDays = parseInt(pill.dataset.days);
-        renderUI();
-      });
-    });
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Çift Saat
+        function updateClock() {
+            const now = new Date();
+            const tr = now.toLocaleTimeString('tr-TR', { timeZone: 'Europe/Istanbul' });
+            const utc = now.toLocaleTimeString('en-GB', { timeZone: 'UTC' });
+            document.getElementById('clock-display').textContent = `TR: ${tr} | UTC: ${utc}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
 
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-      searchQuery = e.target.value.trim();
-      currentPage = 1;
-      renderUI();
-    });
+        const stations = [
+            { id: 1, scope: 'TR', name: 'İstanbul / Kadıköy', lat: 40.9910, lon: 29.0250, aqi: 42, pm25: 10.2, pm10: 22.4, temp: 16, status: 'İyi', color: '#10B981' },
+            { id: 2, scope: 'TR', name: 'İstanbul / Mecidiyeköy', lat: 41.0660, lon: 28.9930, aqi: 78, pm25: 25.4, pm10: 48.0, temp: 15, status: 'Orta', color: '#F59E0B' },
+            { id: 3, scope: 'TR', name: 'Ankara / Kızılay', lat: 39.9208, lon: 32.8541, aqi: 65, pm25: 19.8, pm10: 38.5, temp: 12, status: 'Orta', color: '#F59E0B' },
+            { id: 4, scope: 'TR', name: 'İzmir / Alsancak', lat: 38.4192, lon: 27.1287, aqi: 35, pm25: 8.4, pm10: 18.0, temp: 19, status: 'İyi', color: '#10B981' },
+            { id: 5, scope: 'TR', name: 'Bursa / Nilüfer', lat: 40.2150, lon: 28.9800, aqi: 88, pm25: 29.2, pm10: 55.0, temp: 14, status: 'Orta', color: '#F59E0B' },
+            { id: 6, scope: 'TR', name: 'Antalya / Muratpaşa', lat: 36.8841, lon: 30.7056, aqi: 24, pm25: 5.8, pm10: 14.2, temp: 22, status: 'İyi', color: '#10B981' },
+            { id: 7, scope: 'TR', name: 'Kocaeli / Dilovası Sanayi', lat: 40.7850, lon: 29.5400, aqi: 142, pm25: 52.0, pm10: 92.0, temp: 15, status: 'Kritik', color: '#EF4444' },
+            { id: 8, scope: 'TR', name: 'Trabzon / Sahil', lat: 41.0027, lon: 39.7168, aqi: 22, pm25: 5.1, pm10: 12.0, temp: 13, status: 'İyi', color: '#10B981' },
+            { id: 101, scope: 'GLOBAL', name: 'Hindistan / Yeni Delhi', lat: 28.6139, lon: 77.2090, aqi: 280, pm25: 180.0, pm10: 300.0, temp: 24, status: 'Kritik', color: '#EF4444' },
+            { id: 102, scope: 'GLOBAL', name: 'Çin / Pekin', lat: 39.9042, lon: 116.4074, aqi: 130, pm25: 47.0, pm10: 85.0, temp: 10, status: 'Kritik', color: '#EF4444' },
+            { id: 103, scope: 'GLOBAL', name: 'İngiltere / Londra', lat: 51.5074, lon: -0.1278, aqi: 32, pm25: 7.5, pm10: 16.0, temp: 11, status: 'İyi', color: '#10B981' },
+            { id: 104, scope: 'GLOBAL', name: 'Fransa / Paris', lat: 48.8566, lon: 2.3522, aqi: 44, pm25: 10.5, pm10: 20.0, temp: 13, status: 'İyi', color: '#10B981' },
+            { id: 105, scope: 'GLOBAL', name: 'Almanya / Berlin', lat: 52.5200, lon: 13.4050, aqi: 38, pm25: 8.8, pm10: 18.0, temp: 9, status: 'İyi', color: '#10B981' },
+            { id: 106, scope: 'GLOBAL', name: 'Japonya / Tokyo', lat: 35.6762, lon: 139.6503, aqi: 26, pm25: 6.2, pm10: 14.0, temp: 15, status: 'İyi', color: '#10B981' }
+        ];
 
-    document.getElementById('sortSelect').addEventListener('change', (e) => {
-      sortMode = e.target.value;
-      currentPage = 1;
-      renderUI();
-    });
+        let currentScope = 'TR';
+        let currentDays = 1;
+        let searchQuery = '';
+        let currentPage = 1;
+        const pageSize = 5;
 
-    document.getElementById('levelSelect').addEventListener('change', (e) => {
-      levelFilter = e.target.value;
-      currentPage = 1;
-      renderUI();
-    });
+        let map = null;
+        let markerLayer = null;
 
-    window.addEventListener('DOMContentLoaded', () => {
-      initMap();
-      renderUI();
-    });
-  </script>
+        function setScope(scope, el) {
+            document.querySelectorAll('#pill-tr, #pill-global').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+            currentScope = scope;
+            currentPage = 1;
+            renderAll();
+        }
+
+        function setTimeRange(days, el) {
+            el.parentElement.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+            currentDays = days;
+            renderAll();
+        }
+
+        function applyFilters() {
+            searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
+            currentPage = 1;
+            renderAll();
+        }
+
+        function getFiltered() {
+            return stations.filter(s => {
+                const matchScope = s.scope === currentScope;
+                const matchSearch = searchQuery === '' || s.name.toLowerCase().includes(searchQuery);
+                return matchScope && matchSearch;
+            });
+        }
+
+        function renderAll() {
+            const items = getFiltered();
+            
+            // 3 Stat Kutusu Güncellemesi
+            document.getElementById('statTotal').textContent = items.length;
+            document.getElementById('statClean').textContent = items.filter(s => s.aqi <= 50).length;
+            document.getElementById('statBad').textContent = items.filter(s => s.aqi > 100).length;
+
+            // Sayfalama
+            const totalPages = Math.ceil(items.length / pageSize) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            const start = (currentPage - 1) * pageSize;
+            const pageItems = items.slice(start, start + pageSize);
+
+            const container = document.getElementById('cardList');
+            container.innerHTML = '';
+
+            pageItems.forEach(st => {
+                const card = document.createElement('div');
+                card.className = 'eq-card';
+                card.innerHTML = `
+                    <div class="eq-card-header">
+                        <div class="eq-badge" style="background: ${st.color};">
+                            <span class="mag">${st.aqi}</span>
+                            <span class="type">AQI</span>
+                        </div>
+                        <div class="eq-info">
+                            <div class="eq-location">${st.name}</div>
+                            <div class="eq-sub">
+                                <span class="eq-country-tag">${st.status}</span>
+                                <span>PM2.5: ${st.pm25} µg/m³</span>
+                                <span>• ${st.temp} °C</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="eq-details">
+                        <div>PM10 Toz Seviyesi: <strong>${st.pm10} µg/m³</strong></div>
+                        <div>Koordinat: <strong>${st.lat}, ${st.lon}</strong></div>
+                        <div>Dönem Arşivi: <strong>${currentDays === 1 ? 'Anlık / 24 Saat' : currentDays + ' Günlük Analiz'}</strong></div>
+                    </div>
+                `;
+                card.onclick = () => card.classList.toggle('expanded');
+                container.appendChild(card);
+            });
+
+            renderPagination(totalPages);
+            updateMapMarkers(items);
+        }
+
+        function renderPagination(totalPages) {
+            const pDiv = document.getElementById('pagination');
+            pDiv.innerHTML = '';
+            if (totalPages <= 1) return;
+
+            const prev = document.createElement('div');
+            prev.className = `page-btn ${currentPage === 1 ? 'disabled' : ''}`;
+            prev.textContent = '◀';
+            prev.onclick = () => { if (currentPage > 1) { currentPage--; renderAll(); } };
+            pDiv.appendChild(prev);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('div');
+                btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                btn.textContent = i;
+                btn.onclick = () => { currentPage = i; renderAll(); };
+                pDiv.appendChild(btn);
+            }
+
+            const next = document.createElement('div');
+            next.className = `page-btn ${currentPage === totalPages ? 'disabled' : ''}`;
+            next.textContent = '▶';
+            next.onclick = () => { if (currentPage < totalPages) { currentPage++; renderAll(); } };
+            pDiv.appendChild(next);
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if (tab === 'list') {
+                document.getElementById('nav-list').classList.add('active');
+                document.getElementById('list-view').style.display = 'block';
+                document.getElementById('map-view').style.display = 'none';
+            } else {
+                document.getElementById('nav-map').classList.add('active');
+                document.getElementById('list-view').style.display = 'none';
+                document.getElementById('map-view').style.display = 'block';
+                initMap();
+                setTimeout(() => map.invalidateSize(), 150);
+            }
+        }
+
+        function initMap() {
+            if (map) return;
+            map = L.map('map', { attributionControl: false }).setView([39.0, 35.0], 5);
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }).addTo(map);
+            markerLayer = L.layerGroup().addTo(map);
+            updateMapMarkers(getFiltered());
+        }
+
+        function updateMapMarkers(items) {
+            if (!markerLayer) return;
+            markerLayer.clearLayers();
+            items.forEach(st => {
+                const c = L.circleMarker([st.lat, st.lon], {
+                    radius: 8,
+                    fillColor: st.color,
+                    color: '#fff',
+                    weight: 1.5,
+                    fillOpacity: 0.9
+                }).bindPopup(`<strong>${st.name}</strong><br>AQI: ${st.aqi} (${st.status})`);
+                markerLayer.addLayer(c);
+            });
+        }
+
+        window.onload = () => renderAll();
+    </script>
 </body>
-
 </html>
