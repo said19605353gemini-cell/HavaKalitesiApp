@@ -497,14 +497,14 @@
         updateClock();
 
         const stations = [
-            { id: 1, scope: 'TR', name: 'İstanbul / Kadıköy', lat: 40.9910, lon: 29.0250, aqi: 42, pm25: 10.2, pm10: 22.4, temp: 16, status: 'İyi', color: '#10B981' },
-            { id: 2, scope: 'TR', name: 'İstanbul / Mecidiyeköy', lat: 41.0660, lon: 28.9930, aqi: 78, pm25: 25.4, pm10: 48.0, temp: 15, status: 'Orta', color: '#F59E0B' },
-            { id: 3, scope: 'TR', name: 'Ankara / Kızılay', lat: 39.9208, lon: 32.8541, aqi: 65, pm25: 19.8, pm10: 38.5, temp: 12, status: 'Orta', color: '#F59E0B' },
-            { id: 4, scope: 'TR', name: 'İzmir / Alsancak', lat: 38.4192, lon: 27.1287, aqi: 35, pm25: 8.4, pm10: 18.0, temp: 19, status: 'İyi', color: '#10B981' },
-            { id: 5, scope: 'TR', name: 'Bursa / Nilüfer', lat: 40.2150, lon: 28.9800, aqi: 88, pm25: 29.2, pm10: 55.0, temp: 14, status: 'Orta', color: '#F59E0B' },
-            { id: 6, scope: 'TR', name: 'Antalya / Muratpaşa', lat: 36.8841, lon: 30.7056, aqi: 24, pm25: 5.8, pm10: 14.2, temp: 22, status: 'İyi', color: '#10B981' },
-            { id: 7, scope: 'TR', name: 'Kocaeli / Dilovası Sanayi', lat: 40.7850, lon: 29.5400, aqi: 142, pm25: 52.0, pm10: 92.0, temp: 15, status: 'Kritik', color: '#EF4444' },
-            { id: 8, scope: 'TR', name: 'Trabzon / Sahil', lat: 41.0027, lon: 39.7168, aqi: 22, pm25: 5.1, pm10: 12.0, temp: 13, status: 'İyi', color: '#10B981' },
+            { id: 1, scope: 'TR', name: 'İstanbul / Kadıköy', lat: 40.9910, lon: 29.0250, aqi: 42, pm25: 10.2, pm10: 22.4, temp: 16, status: 'İyi', color: '#10B981', daysAgo: 1 },
+            { id: 2, scope: 'TR', name: 'İstanbul / Mecidiyeköy', lat: 41.0660, lon: 28.9930, aqi: 78, pm25: 25.4, pm10: 48.0, temp: 15, status: 'Orta', color: '#F59E0B', daysAgo: 1 },
+            { id: 3, scope: 'TR', name: 'Ankara / Kızılay', lat: 39.9208, lon: 32.8541, aqi: 65, pm25: 19.8, pm10: 38.5, temp: 12, status: 'Orta', color: '#F59E0B', daysAgo: 3 },
+            { id: 4, scope: 'TR', name: 'İzmir / Alsancak', lat: 38.4192, lon: 27.1287, aqi: 35, pm25: 8.4, pm10: 18.0, temp: 19, status: 'İyi', color: '#10B981', daysAgo: 7 },
+            { id: 5, scope: 'TR', name: 'Bursa / Nilüfer', lat: 40.2150, lon: 28.9800, aqi: 88, pm25: 29.2, pm10: 55.0, temp: 14, status: 'Orta', color: '#F59E0B', daysAgo: 15 },
+            { id: 6, scope: 'TR', name: 'Antalya / Muratpaşa', lat: 36.8841, lon: 30.7056, aqi: 24, pm25: 5.8, pm10: 14.2, temp: 22, status: 'İyi', color: '#10B981', daysAgo: 30 },
+            { id: 7, scope: 'TR', name: 'Kocaeli / Dilovası Sanayi', lat: 40.7850, lon: 29.5400, aqi: 142, pm25: 52.0, pm10: 92.0, temp: 15, status: 'Kritik', color: '#EF4444', daysAgo: 90 },
+            { id: 8, scope: 'TR', name: 'Trabzon / Sahil', lat: 41.0027, lon: 39.7168, aqi: 22, pm25: 5.1, pm10: 12.0, temp: 13, status: 'İyi', color: '#10B981', daysAgo: 365 },
             { id: 101, scope: 'GLOBAL', name: 'Hindistan / Yeni Delhi', lat: 28.6139, lon: 77.2090, aqi: 280, pm25: 180.0, pm10: 300.0, temp: 24, status: 'Kritik', color: '#EF4444' },
             { id: 102, scope: 'GLOBAL', name: 'Çin / Pekin', lat: 39.9042, lon: 116.4074, aqi: 130, pm25: 47.0, pm10: 85.0, temp: 10, status: 'Kritik', color: '#EF4444' },
             { id: 103, scope: 'GLOBAL', name: 'İngiltere / Londra', lat: 51.5074, lon: -0.1278, aqi: 32, pm25: 7.5, pm10: 16.0, temp: 11, status: 'İyi', color: '#10B981' },
@@ -547,7 +547,8 @@
             return stations.filter(s => {
                 const matchScope = s.scope === currentScope;
                 const matchSearch = searchQuery === '' || s.name.toLowerCase().includes(searchQuery);
-                return matchScope && matchSearch;
+                const matchTime = (s.daysAgo || 1) <= currentDays;
+                return matchScope && matchSearch && matchTime;
             });
         }
 
