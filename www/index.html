@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Hava Kalitesi ve Kirlilik Radarı</title>
-  
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -39,7 +42,7 @@
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
       background-color: var(--bg);
-      background-image: 
+      background-image:
         radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
         radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
       background-attachment: fixed;
@@ -210,7 +213,10 @@
       scrollbar-width: none;
       padding-bottom: 2px;
     }
-    .time-scroll::-webkit-scrollbar { display: none; }
+
+    .time-scroll::-webkit-scrollbar {
+      display: none;
+    }
 
     .time-pill {
       background: rgba(255, 255, 255, 0.05);
@@ -408,10 +414,11 @@
     }
   </style>
 </head>
+
 <body>
 
   <div class="container">
-    
+
     <!-- Top Bar with Clocks -->
     <div class="header-bar">
       <div class="app-brand">
@@ -623,16 +630,41 @@
       });
     }
 
+    // Animate Number Counting (Otomatik Sayaç Efekti)
+    function animateValue(id, target) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const current = parseInt(el.textContent) || 0;
+      if (current === target) return;
+      const duration = 400;
+      const startTime = performance.now();
+
+      function update(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        const val = Math.round(current + (target - current) * ease);
+        el.textContent = val;
+        if (progress < 1) requestAnimationFrame(update);
+        else el.textContent = target;
+      }
+      requestAnimationFrame(update);
+    }
+
     function renderUI() {
       const filtered = getFilteredData();
       document.getElementById('stationCount').textContent = `${filtered.length} istasyon listelendi`;
 
-      // Update Top Stats
-      const scopeStations = stations.filter(s => s.scope === currentScope);
-      document.getElementById('statTotal').textContent = scopeStations.length;
-      document.getElementById('statClean').textContent = scopeStations.filter(s => s.aqi <= 50).length;
-      document.getElementById('statMod').textContent = scopeStations.filter(s => s.aqi > 50 && s.aqi <= 100).length;
-      document.getElementById('statBad').textContent = scopeStations.filter(s => s.aqi > 100).length;
+      // Update Top Stats Otomatik Olarak Filtrelenen Veriye Göre Sayar
+      const total = filtered.length;
+      const clean = filtered.filter(s => s.aqi <= 50).length;
+      const mod = filtered.filter(s => s.aqi > 50 && s.aqi <= 100).length;
+      const bad = filtered.filter(s => s.aqi > 100).length;
+
+      animateValue('statTotal', total);
+      animateValue('statClean', clean);
+      animateValue('statMod', mod);
+      animateValue('statBad', bad);
 
       // Pagination
       const totalPages = Math.ceil(filtered.length / pageSize) || 1;
@@ -751,4 +783,5 @@
     });
   </script>
 </body>
+
 </html>
